@@ -1,8 +1,13 @@
 package com.technorose.techrose.controller;
 
-import com.technorose.techrose.dto.auth.*;
+import com.technorose.techrose.dto.LoginDto;
+import com.technorose.techrose.dto.RegisterDto;
+import com.technorose.techrose.dto.TokenCheckDto;
 import com.technorose.techrose.enums.Errors;
+import com.technorose.techrose.models.User;
 import com.technorose.techrose.service.AuthService;
+import com.technorose.techrose.utils.DataResult;
+import com.technorose.techrose.utils.Result;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
@@ -22,53 +27,32 @@ public class AuthController {
     }
 
     @PostMapping(path = "/user-register")
-    public ResponseEntity<UserRegisterResult> userRegister(@RequestBody UserRegisterArgs args) {
-        UserRegisterResult result = new UserRegisterResult();
-
+    public ResponseEntity<Result> userRegister(@RequestBody RegisterDto args) {
         try {
-            result = authService.register(args);
+            return new ResponseEntity<>(authService.userRegister(args), HttpStatus.CREATED);
         }
         catch(Exception ex) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.UnhandledExceptionOccurred.getCode());
-            result.getResult().setErrorDescription(Errors.UnhandledExceptionOccurred.getDescription());
-            result.getResult().setErrorException(ex.getMessage());
+            return new ResponseEntity<>(new Result(false, Errors.UnhandledExceptionOccurred.getDescription()), HttpStatus.BAD_REQUEST);
         }
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PostMapping(path = "/user-login")
-    public ResponseEntity<UserLoginResult> userLogin(@RequestBody UserLoginArgs args) {
-        UserLoginResult result = new UserLoginResult();
-
+    public ResponseEntity<DataResult<User>> userLogin(@RequestBody LoginDto args) {
         try {
-            result = authService.userLogin(args);
+            return new ResponseEntity<>(authService.userLogin(args), HttpStatus.OK);
         }
         catch(Exception ex) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.UnhandledExceptionOccurred.getCode());
-            result.getResult().setErrorDescription(Errors.UnhandledExceptionOccurred.getDescription());
-            result.getResult().setErrorException(ex.getMessage());
+            return new ResponseEntity<>(new DataResult<>(null,false, Errors.UnhandledExceptionOccurred.getDescription()), HttpStatus.BAD_REQUEST);
         }
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PostMapping(path = "/token-check")
-    public ResponseEntity<TokenCheckResult> tokenCheck(@RequestBody TokenCheckArgs args) {
-        TokenCheckResult result = new TokenCheckResult();
-
+    public ResponseEntity<Result> tokenCheck(@RequestBody TokenCheckDto args) {
         try {
-            result = authService.tokenCheck(args);
+            return new ResponseEntity<>(authService.tokenCheck(args), HttpStatus.OK);
         }
         catch(Exception ex) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.UnhandledExceptionOccurred.getCode());
-            result.getResult().setErrorDescription(Errors.UnhandledExceptionOccurred.getDescription());
-            result.getResult().setErrorException(ex.getMessage());
+            return new ResponseEntity<>(new Result(false), HttpStatus.UNAUTHORIZED);
         }
-
-        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

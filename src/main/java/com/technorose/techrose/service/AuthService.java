@@ -1,11 +1,14 @@
 package com.technorose.techrose.service;
 
-import com.technorose.techrose.dto.UserModelDto;
-import com.technorose.techrose.dto.auth.*;
+import com.technorose.techrose.dto.LoginDto;
+import com.technorose.techrose.dto.RegisterDto;
+import com.technorose.techrose.dto.TokenCheckDto;
 import com.technorose.techrose.enums.Errors;
 import com.technorose.techrose.models.User;
 import com.technorose.techrose.repository.UserRepository;
+import com.technorose.techrose.utils.DataResult;
 import com.technorose.techrose.utils.JwtUtility;
+import com.technorose.techrose.utils.Result;
 import com.technorose.techrose.utils.Validator;
 import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -30,71 +33,37 @@ public class AuthService {
         this.mapper = new ModelMapper();
     }
 
-    public UserRegisterResult register(UserRegisterArgs args) {
-        UserRegisterResult result = new UserRegisterResult();
-
+    public Result userRegister(RegisterDto args) {
         if(args.getUsername().trim().equals("") || args.getUsername().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(args.getFirstName().trim().equals("") || args.getFirstName().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(args.getLastName().trim().equals("") || args.getLastName().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(args.getEmail().trim().equals("") || args.getEmail().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(Validator.email_validator(args.getEmail()).equals(false)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(args.getPhoneNumber().trim().equals("") || args.getPhoneNumber().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(args.getPassword().trim().equals("") || args.getPassword().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(userRepository.findByUsername(args.getUsername()).isPresent()) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.UserExistError.getCode());
-            result.getResult().setErrorDescription(Errors.UserExistError.getDescription());
-
-            return result;
+            return new Result(false, Errors.UserNotFoundError.getDescription());
         }
 
         String hashedPassword = passwordEncoder.encode(args.getPassword());
@@ -109,76 +78,40 @@ public class AuthService {
 
         userRepository.save(user);
 
-        result.getResult().setSuccess(true);
-
-        return result;
+        return new Result(true);
     }
 
-    public UserLoginResult userLogin(UserLoginArgs args) {
-        UserLoginResult result = new UserLoginResult();
-
+    public DataResult<User> userLogin(LoginDto args) {
         if(args.getUsername().trim().equals("") || args.getUsername().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new DataResult<User>(new User(), false, Errors.InvalidCredentialsError.getDescription());
         }
 
         if(args.getPassword().trim().equals("") || args.getPassword().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new DataResult<User>(new User(), false, Errors.InvalidCredentialsError.getDescription());
         }
 
         User user = userRepository.findByUsername(args.getUsername()).orElseGet(null);
 
         if (user == null) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.UserNotFoundError.getCode());
-            result.getResult().setErrorDescription(Errors.UserNotFoundError.getDescription());
-
-            return result;
+            return new DataResult<User>(new User(), false, Errors.UserNotFoundError.getDescription());
         }
 
         boolean ok = passwordEncoder.matches(args.getPassword(), user.getHashedPassword());
 
         if(!ok) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.IncorrectPasswordError.getCode());
-            result.getResult().setErrorDescription(Errors.IncorrectPasswordError.getDescription());
-
-            return result;
+            return new DataResult<User>(new User(), false, Errors.IncorrectPasswordError.getDescription());
         }
 
         String token = JwtUtility.generateToken(user);
 
-        UserModelDto userModelDto = mapper.map(user, UserModelDto.class);
-
-        result.setToken(token);
-        result.setUser(userModelDto);
-        result.getResult().setSuccess(true);
-
-        return result;
+        return new DataResult<User>(user, true);
     }
 
-    public TokenCheckResult tokenCheck(TokenCheckArgs args) {
-        TokenCheckResult result = new TokenCheckResult();
-
+    public Result tokenCheck(TokenCheckDto args) {
         if(args.getClientTime().equals(null)) {
-            result.getResult().setSuccess(false);
-            result.getResult().setErrorCode(Errors.InvalidCredentialsError.getCode());
-            result.getResult().setErrorDescription(Errors.InvalidCredentialsError.getDescription());
-
-            return result;
+            return new Result(false, Errors.InvalidCredentialsError.getDescription());
         }
 
-        result.getResult().setSuccess(true);
-        result.setClientTime(args.getClientTime());
-        result.setServerTime(new Date());
-
-        return result;
+        return new Result(true);
     }
 }
